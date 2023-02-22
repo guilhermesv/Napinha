@@ -34,8 +34,9 @@ let deslizante_desfoque;
 let deslizante_frame;
 
 function preload() {
-  napinha_modelo = loadModel("../recursos/Napinha-Modelo-UV-Caos.obj");
-  napinha_modelo_tampa = loadModel("../recursos/Napinha-Modelo-Tampa.obj");
+  const base_url = window.location.href;
+  napinha_modelo = loadModel(base_url + "recursos/Napinha-Modelo-UV-Caos.obj");
+  napinha_modelo_tampa = loadModel(base_url + "recursos/Napinha-Modelo-Tampa.obj");
 }
 
 function setup() {
