@@ -1,0 +1,38 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+html, body{
+  height: 100%;
+  background-color: #000;
+  color: #fff;
+  font-family:'Courier New', Courier, monospace;
+}
+
+main {
+  background-color: #000;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+#interface-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12em;
+  padding: 0.5em;
+}
+
+#interface-container > * {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5em;
+}

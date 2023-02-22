@@ -1,67 +1,225 @@
-let pg;
+let pg_topo;
+let pg_base;
+let pg_fundo;
+let pg_composicao;
+let pg_tamanho;
+let escala;
+
+let napinha_modelo;
+let napinha_modelo_tampa;
+
 let texturas_pacote;
 let texturas;
+let texturas_ordem;
+let texturas_qtd;
+let paleta= ["#ffff00","#00ffff","#ff00f1","#ee0000","#0000ff"];
+
+let easycam;
+
+let debug;
+let play;
+let gravando;
+let contador;
+let contador_gravacao;
+let frame_loop;
+
+let check_debug;
+let botao_reset;
+let botao_play;
+let botao_gravar;
+let botao_gravar_frame;
+let entrada_frames_qtd;
+let entrada_arquivo_prefixo;
+let deslizante_desfoque;
+let deslizante_frame;
 
 function preload() {
-  napinha = loadModel("../recursos/Napinha-Modelo.obj");
+  napinha_modelo = loadModel("../recursos/Napinha-Modelo-UV-Caos.obj");
+  napinha_modelo_tampa = loadModel("../recursos/Napinha-Modelo-Tampa.obj");
 }
 
 function setup() {
-  createCanvas(500, 500);
-  background(255, 0, 0);
-  imageMode(CENTER);
+
+  debug = true;
+  play = true;
+  gravando = false;
+  frame_loop = 100;
   
-  pg = createGraphics(500, 500, WEBGL);
-  pg.setAttributes({ alpha: true });
-  pg.createEasyCam();
-  pg.noStroke();
+  check_debug = createCheckbox("Modo debug", debug);
+  check_debug.changed(debug_alterna);
+  check_debug.parent("interface-container");
 
-  texturas_pacote = createGraphics(500, 500);
+  botao_reset = createButton("Regenerar texturas");
+  botao_reset.mousePressed(texturas_reset);
+  botao_reset.parent("interface-container");
 
-  texturas = [];
-  texturas[0] = createGraphics(255, 255);
-  texturas[1] = createGraphics(255, 255);
-  texturas[2] = createGraphics(255, 255);
-  texturas[3] = createGraphics(255, 255);
+  deslizante_desfoque = createSlider(2, 16, 4);
+  deslizante_desfoque.parent("interface-container");
+
+  botao_play = createButton("Pause");
+  botao_play.mousePressed(play_alterna);
+  botao_play.parent("interface-container");
   
-  texturas[0].background(0, 0, 0);
+  deslizante_frame = createSlider(0, frame_loop, 0);
+  deslizante_frame.parent("interface-container");
   
-  texturas[1].background(255, 0, 0);
+  entrada_arquivo_prefixo = createInput("Napinha-A");
+  entrada_arquivo_prefixo.parent("interface-container");
 
-  texturas[2].background(0, 255, 0);
-  for(let i = 0; i < 10; i++)  {
-    texturas[2].noFill();
-    texturas[2].stroke(255);
-    texturas[2].strokeWeight(10);
-    texturas[2].circle(texturas[0].width/2, texturas[0].height/2, i * 50);
-  };
+  entrada_frames_qtd = createInput(frame_loop, "number");
+  entrada_frames_qtd.parent("interface-container");
 
-  texturas[3].background(127, 0, 255);
-  for(let i = 0; i < 10; i++)  {
-    texturas[3].noFill();
-    texturas[3].stroke(255);
-    texturas[3].strokeWeight(10);
-    texturas[3].circle(texturas[0].width/2, texturas[0].height/2, i * 50);
-  };
+  botao_gravar = createButton("Gravar");
+  botao_gravar.mousePressed(gravar);
+  botao_gravar.parent("interface-container");
 
-  texturas_pacote.image(texturas[0], 0, 0);
-  texturas_pacote.image(texturas[1], 255, 0);
-  texturas_pacote.image(texturas[2], 0, 255);
-  texturas_pacote.image(texturas[3], 255, 255);
+  texturas_ordem = [0, 1, 2, 3];
+  texturas_qtd = [3, 6, 5, 20];
+
+  texturas_reset();
+  inicializar(0.3, 0, true);
+  
 }
 
 function draw() {
+
+  frame_loop = entrada_frames_qtd.value();
+
+  pg_composicao.blendMode(BLEND);
+  texturas_update();
+
+  napinha(pg_base, true);
+  napinha(pg_topo, false);
+
+  fundo(pg_fundo);
+
+  pg_composicao.drawingContext.filter = `blur(${deslizante_desfoque.value() * escala}px)`;
+  pg_composicao.image(pg_fundo, width/2, height/2);
+  pg_composicao.image(pg_base, width/2, height/2);
+  pg_composicao.blendMode(MULTIPLY);
+  pg_composicao.image(pg_topo, width/2, height/2);
+
   
-  pg.clear();
-  pg.translate(0, 0, -200);
-  pg.translate(0, 0, 0);
-  pg.rotateX(frameCount * 0.01);
-  pg.rotateY(frameCount * 0.01 * -1);
-  pg.texture(texturas_pacote);
-  pg.model(napinha);
+  pg_composicao.filter(POSTERIZE, 2);
 
-  image(pg, width/2, height/2, 1000, 1000);
-  image(pg, width/2, height/2);
-  image(texturas_pacote, 50, 50, 100, 100);
+  image(pg_composicao, width/2, height/2);
 
+  if(gravando && contador <= entrada_frames_qtd.value()) {
+    arquivo_nome = `${entrada_arquivo_prefixo.value()}-${String(contador).padStart(4, '0')}`;
+    saveCanvas(pg_composicao, arquivo_nome, 'png');
+    contador_gravacao++;
+  }
+  
+  if(play) {
+    contador++;
+  } else {
+    contador = deslizante_frame.value();
+  }
+
+  if(contador_gravacao == entrada_frames_qtd.value() && gravando) {
+    gravando = false;
+    inicializar(0.3);
+    frameRate(30);
+  }
+
+  if(debug) {  
+    image(texturas_pacote, 50, 50, 100, 100);
+    fill(0);
+    textSize(70);
+    textAlign(RIGHT);
+    text(`fps: ${round(frameRate())}`, width, 60);
+    text(`desfoque: ${deslizante_desfoque.value()}`, width, 120);
+    if( gravando ) {
+      text(`gravando: ${contador}`, width, 180);
+    }
+  }
+
+}
+
+function inicializar(_escala) {
+  escala = _escala;
+  contador = 0;
+
+  texturas_init(escala);
+  
+  let canvas = createCanvas(1536 * escala, 1920 * escala);
+  canvas.parent("tela-container");
+  frameRate(30);
+  background(255);
+  imageMode(CENTER);
+    
+  pg_base = createGraphics(pg_tamanho, pg_tamanho, WEBGL);
+  pg_base.setAttributes({ alpha: true });
+  pg_base.noStroke();
+
+  pg_topo = createGraphics(pg_tamanho, pg_tamanho, WEBGL);
+  pg_topo.setAttributes({ alpha: true });
+  pg_topo.noStroke();
+  
+  pg_fundo = createGraphics(width, height);
+  pg_fundo.imageMode(CENTER);
+  pg_fundo.background(0);
+
+  pg_composicao = createGraphics(width, height);
+  pg_composicao.imageMode(CENTER);
+  pg_composicao.background(0);
+  pg_composicao.drawingContext.filter = `blur(${deslizante_desfoque.value() * escala}px)`;
+  
+  easycam = pg_base.createEasyCam();
+  easycam = pg_topo.createEasyCam();
+}
+
+function debug_alterna() {
+  if (check_debug.checked()) {
+    debug = true;
+  } else {
+    debug = false;
+  }
+}
+
+function play_alterna() {
+  if ( play ) {
+    play = false;
+    botao_play.html("Play");
+    deslizante_frame.value(contador%frame_loop);
+    deslizante_frame.elt.max = frame_loop;
+  } else {
+    play = true;
+    botao_play.html("Pause");
+  }
+}
+
+function gravar() {
+  inicializar(1);
+  frameRate(10);
+  contador_gravacao = 0;
+  play = true;
+  gravando = true;
+}
+
+function napinha(c, modo_textura) {
+  c.clear();
+  c.push();
+  c.scale(1.2);
+  c.rotateY(contador%frame_loop * TWO_PI/frame_loop * -1);
+  c.rotateX(sin(contador%frame_loop / frame_loop/10) * 0.4 );
+  if (modo_textura) {
+    c.texture(texturas_pacote);
+    c.model(napinha_modelo);
+  } else {
+    c.fill(255, 0, 0);
+    c.model(napinha_modelo_tampa);
+  }
+  c.pop();
+}
+
+function fundo(c) {
+  c.push();
+  c.blendMode(BLEND);
+  c.translate(c.width/2, c.height/2);
+  c.image(texturas_pacote, 0, 0, width, height);
+  c.rotate(HALF_PI);
+  c.blendMode(DIFFERENCE);
+  c.image(texturas_pacote, 0, 0, width, width);
+  c.pop();
 }
