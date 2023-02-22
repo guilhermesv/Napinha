@@ -13,6 +13,10 @@ html, body{
   font-family:'Courier New', Courier, monospace;
 }
 
+a, a:visited {
+  color: inherit;
+}
+
 main {
   background-color: #000;
   height: 100%;
