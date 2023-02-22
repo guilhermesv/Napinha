@@ -203,8 +203,9 @@ function napinha(c, modo_textura) {
   c.push();
   c.scale(1.2);
   c.rotateY(contador%frame_loop * TWO_PI/frame_loop * -1);
-  angulo_incremento = HALF_PI / frame_loop;
-  c.rotateX(sin((contador%frame_loop) / frame_loop/10) );
+  angulo_incremento = TWO_PI * 2 / frame_loop;
+  angulo = angulo_incremento * (contador%frame_loop)
+  c.rotateX(sin(angulo) * -0.3);
   if (modo_textura) {
     c.texture(texturas_pacote);
     c.model(napinha_modelo);
