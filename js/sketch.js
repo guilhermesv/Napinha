@@ -97,7 +97,7 @@ function draw() {
   pg_composicao.drawingContext.filter = `blur(${deslizante_desfoque.value() * escala}px)`;
   pg_composicao.image(pg_fundo, width/2, height/2);
   pg_composicao.image(pg_base, width/2, height/2);
-  pg_composicao.blendMode(MULTIPLY);
+  pg_composicao.blendMode(DIFFERENCE);
   pg_composicao.image(pg_topo, width/2, height/2);
 
   
@@ -203,12 +203,13 @@ function napinha(c, modo_textura) {
   c.push();
   c.scale(1.2);
   c.rotateY(contador%frame_loop * TWO_PI/frame_loop * -1);
-  c.rotateX(sin(contador%frame_loop / frame_loop/10) * 0.4 );
+  angulo_incremento = HALF_PI / frame_loop;
+  c.rotateX(sin((contador%frame_loop) / frame_loop/10) );
   if (modo_textura) {
     c.texture(texturas_pacote);
     c.model(napinha_modelo);
   } else {
-    c.fill(255, 0, 0);
+    c.fill(0, 0, 0);
     c.model(napinha_modelo_tampa);
   }
   c.pop();
